@@ -4,6 +4,7 @@ Push-to-talk voice transcription helper for Linux desktops. Hold a configured ke
 
 ## Requirements
 - Python 3.10 or newer
+- Python venv tooling (`sudo apt install python3.12-venv` on Debian/Ubuntu; older releases may use `python3-venv`)
 - `xdotool` installed on the system (`sudo apt install xdotool`)
 - Permission to read `/dev/input/event*` (add your user to the `input` group or run with elevated privileges)
 - An OpenAI API key with access to `gpt-4o-transcribe`
@@ -24,7 +25,13 @@ Push-to-talk voice transcription helper for Linux desktops. Hold a configured ke
    ```bash
    ./scripts/setup.sh
    ```
-   This script creates (or reuses) `.venv`, upgrades `pip`, and installs everything from `requirements.txt`.
+   This script creates (or reuses) `.venv`, upgrades `pip`, and installs everything from `requirements.txt`.  
+   If you see `ensurepip is not available`, install the venv tooling and re-run:
+   ```bash
+   sudo apt install python3.12-venv   # or python3-venv on older distros
+   rm -rf .venv
+   ./scripts/setup.sh
+   ```
 4. Activate the environment whenever you work on the project:  
    ```bash
    source .venv/bin/activate
