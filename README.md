@@ -6,6 +6,7 @@ Push-to-talk voice transcription helper for Linux desktops. Hold a configured ke
 - Python 3.10 or newer
 - Python venv tooling (`sudo apt install python3.12-venv` on Debian/Ubuntu; older releases may use `python3-venv`)
 - `xdotool` installed on the system (`sudo apt install xdotool`)
+- PortAudio runtime/dev packages (`sudo apt install libportaudio2 portaudio19-dev`)
 - Permission to read `/dev/input/event*` (add your user to the `input` group or run with elevated privileges)
 - An OpenAI API key with access to `gpt-4o-transcribe`
 
@@ -44,6 +45,12 @@ sudo usermod -aG input $USER
 newgrp input      # start a shell with the new group, or log out/in
 ```
 Verify membership with `id` or `groups`; you should see `input` listed.
+
+If `python main.py` fails with “PortAudio library not found”, install the PortAudio runtime/dev packages and rerun setup:
+```bash
+sudo apt install libportaudio2 portaudio19-dev
+./scripts/setup.sh
+```
 
 ## Running
 ```bash
