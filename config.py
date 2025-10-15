@@ -6,7 +6,7 @@ PRESS_ENTER = True
 MODEL = "gpt-4o-transcribe"
 AUDIO_SAMPLE_RATE = 16000
 AUDIO_CHANNELS = 1
-MAX_RECORD_SECONDS = 10
+MAX_RECORD_SECONDS = 30
 
 # Logging behaviour
 LOG_LEVEL = logging.INFO  # set to logging.WARNING to quiet most logs
