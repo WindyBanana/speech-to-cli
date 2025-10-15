@@ -9,15 +9,34 @@ Push-to-talk voice transcription helper for Linux desktops. Hold a configured ke
 - An OpenAI API key with access to `gpt-4o-transcribe`
 
 ## Setup
-```bash
-git clone https://github.com/WindyBanana/speech-to-cli.git
-cd speech-to-cli
-cp .env.sample .env   # fill in OPENAI_API_KEY
-./scripts/setup.sh
-source .venv/bin/activate
-```
+1. Clone the repository:  
+   ```bash
+   git clone https://github.com/WindyBanana/speech-to-cli.git
+   cd speech-to-cli
+   ```
+2. Copy the environment template and add your OpenAI key:  
+   ```bash
+   cp .env.sample .env
+   nano .env  # or your preferred editor
+   ```
+   Replace `your_openai_api_key_here` with a valid `OPENAI_API_KEY`.
+3. Create the virtual environment and install dependencies:  
+   ```bash
+   ./scripts/setup.sh
+   ```
+   This script creates (or reuses) `.venv`, upgrades `pip`, and installs everything from `requirements.txt`.
+4. Activate the environment whenever you work on the project:  
+   ```bash
+   source .venv/bin/activate
+   ```
 
-The setup script creates the `.venv` virtual environment (if missing), upgrades `pip`, and installs dependencies from `requirements.txt`.
+## Keyboard Input Permissions
+You must be able to read keyboard events from `/dev/input/event*`. On most Debian/Ubuntu systems this means joining the `input` group:
+```bash
+sudo usermod -aG input $USER
+newgrp input      # start a shell with the new group, or log out/in
+```
+Verify membership with `id` or `groups`; you should see `input` listed.
 
 ## Running
 ```bash
