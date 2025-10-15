@@ -62,6 +62,11 @@ python main.py
 
 Hold the configured push-to-talk key (`config.PTT_KEY`) to start recording. Release the key (or wait 10 seconds) to submit the audio, transcribe it, and type the text. To automatically send Enter afterwards, leave `PRESS_ENTER = True` in `config.py`.
 
+When you're done, stop the script with `Ctrl+C` and leave the virtual environment with:
+```bash
+deactivate
+```
+
 ## Configuration
 Adjust `config.py` to change:
 - `PTT_KEY`: key name from `evdev.ecodes` (default `KEY_RIGHTALT`)
