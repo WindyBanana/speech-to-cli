@@ -63,6 +63,7 @@ Hold the configured push-to-talk key (`config.PTT_KEY`) to start recording. Rele
 ## Configuration
 Adjust `config.py` to change:
 - `PTT_KEY`: key name from `evdev.ecodes` (default `KEY_RIGHTALT`)
+- `PTT_KEYSYM`: X11 keysym sent to `xdotool keyup` before typing (set to `None` if your push-to-talk key is not a modifier)
 - `PRESS_ENTER`: whether to send the Enter key after typing the transcription
 - `MODEL`: OpenAI transcription model (`gpt-4o-transcribe`)
 - `AUDIO_SAMPLE_RATE`, `AUDIO_CHANNELS`, `MAX_RECORD_SECONDS`: audio capture parameters

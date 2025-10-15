@@ -1,6 +1,7 @@
 import logging
 
 PTT_KEY = "KEY_RIGHTALT"
+PTT_KEYSYM = "Alt_R"  # xdotool keysym for the push-to-talk key (set None if unused)
 PRESS_ENTER = True
 MODEL = "gpt-4o-transcribe"
 AUDIO_SAMPLE_RATE = 16000

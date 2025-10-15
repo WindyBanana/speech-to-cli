@@ -256,6 +256,15 @@ class PushToTalkDaemon:
         return text.strip()
 
     def _type_text(self, text: str) -> None:
+        keysym = getattr(config, "PTT_KEYSYM", None)
+        if keysym:
+            try:
+                subprocess.run(
+                    ["xdotool", "keyup", "--clearmodifiers", keysym],
+                    check=True,
+                )
+            except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+                self._logger.warning("Failed to send keyup for %s: %s", keysym, exc)
         cmd = ["xdotool", "type", "--delay", "0", "--clearmodifiers", text]
         try:
             subprocess.run(cmd, check=True)
