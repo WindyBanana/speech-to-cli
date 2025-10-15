@@ -1,0 +1,6 @@
+evdev
+numpy
+openai
+python-dotenv
+requests
+sounddevice
