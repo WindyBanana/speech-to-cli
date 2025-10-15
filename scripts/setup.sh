@@ -21,3 +21,6 @@ pip install -r requirements.txt
 echo
 echo "Environment ready. Activate it anytime with:"
 echo "  source .venv/bin/activate"
+echo " and then"
+echo "  python main.py"
+echo "to start the daemon."
