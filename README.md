@@ -68,3 +68,11 @@ Adjust `config.py` to change:
 - `AUDIO_SAMPLE_RATE`, `AUDIO_CHANNELS`, `MAX_RECORD_SECONDS`: audio capture parameters
 
 Environment variables are loaded from `.env` using `python-dotenv`. At minimum, set `OPENAI_API_KEY`.
+
+### Optional Logging Tweaks
+`config.py` exposes a few switches:
+- `LOG_LEVEL`: set to `logging.WARNING` (or `"WARNING"`) to quiet most console output.
+- `LOG_FORMAT`: defaults to `%(message)s` to avoid timestamps; change as desired.
+- `LOG_TRANSCRIPTS`: set `True` if you want the recognized text logged to the console as well as typed via `xdotool`.
+
+To keep the daemon running while you use other apps, start it in one terminal (or background it with `nohup python main.py &`) and switch focus to the target window before releasing the push-to-talk key.

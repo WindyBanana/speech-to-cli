@@ -22,10 +22,14 @@ import config
 
 def configure_logging() -> None:
     handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s", "%H:%M:%S")
+    log_format = getattr(config, "LOG_FORMAT", "%(levelname)s: %(message)s")
+    formatter = logging.Formatter(log_format)
     handler.setFormatter(formatter)
     root = logging.getLogger()
-    root.setLevel(logging.INFO)
+    level = getattr(config, "LOG_LEVEL", logging.INFO)
+    if isinstance(level, str):
+        level = getattr(logging, level.upper(), logging.INFO)
+    root.setLevel(level)
     root.handlers.clear()
     root.addHandler(handler)
 
@@ -243,7 +247,10 @@ class PushToTalkDaemon:
             return ""
         text = getattr(response, "text", "") or ""
         if text:
-            self._logger.info("Transcription received: %s", text)
+            if getattr(config, "LOG_TRANSCRIPTS", False):
+                self._logger.info("Transcription received: %s", text)
+            else:
+                self._logger.info("Transcription received.")
         else:
             self._logger.warning("Transcription response did not contain text.")
         return text.strip()
