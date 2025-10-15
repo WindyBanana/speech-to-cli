@@ -8,6 +8,7 @@ Push-to-talk voice transcription helper for Linux desktops. Hold a configured ke
 - `xdotool` installed on the system (`sudo apt install xdotool`)
 - PortAudio runtime/dev packages (`sudo apt install libportaudio2 portaudio19-dev`)
 - Permission to read `/dev/input/event*` (add your user to the `input` group or run with elevated privileges)
+- Add the user to the input group (`sudo usermod -aG input $USER`)
 - An OpenAI API key with access to `gpt-4o-transcribe`
 
 ## Setup
@@ -44,6 +45,7 @@ You must be able to read keyboard events from `/dev/input/event*`. On most Debia
 sudo usermod -aG input $USER
 newgrp input      # start a shell with the new group, or log out/in
 ```
+If you skip the `usermod` command, the daemon will fail with `PermissionError` when trying to read `/dev/input/event*`.
 Verify membership with `id` or `groups`; you should see `input` listed.
 
 If `python main.py` fails with “PortAudio library not found”, install the PortAudio runtime/dev packages and rerun setup:
