@@ -16,6 +16,8 @@ Push-to-talk voice transcription helper for Linux desktops. Hold a configured ke
 - Permission to read `/dev/input/event*` (add your user to the `input` group or run with elevated privileges)
 - Add the user to the input group (`sudo usermod -aG input $USER`)
 - An OpenAI API key with access to `gpt-4o-transcribe`
+  (recommended over the mini variant because it stays more accurate on short,
+  noisy CLI commands)
 
 ## Setup
 1. Clone the repository:  
