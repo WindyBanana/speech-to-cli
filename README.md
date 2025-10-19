@@ -2,6 +2,12 @@
 
 Push-to-talk voice transcription helper for Linux desktops. Hold a configured key (Right Alt by default) to record audio, send it to OpenAI Whisper (`gpt-4o-transcribe`), and type the transcription into the active window via `xdotool`.
 
+## Branches
+- `master`: headless daemon only; works on any Linux environment (desktop or server).
+- `feature/gui-dashboard`: includes the optional GUI dashboard described below. The
+  dashboard depends on Tk (`python3-tk`); the `scripts/install-dashboard.sh` helper
+  will install it automatically on Debian/Ubuntu-based systems.
+
 ## Requirements
 - Python 3.10 or newer
 - Python venv tooling (`sudo apt install python3.12-venv` on Debian/Ubuntu; older releases may use `python3-venv`)
@@ -10,6 +16,8 @@ Push-to-talk voice transcription helper for Linux desktops. Hold a configured ke
 - Permission to read `/dev/input/event*` (add your user to the `input` group or run with elevated privileges)
 - Add the user to the input group (`sudo usermod -aG input $USER`)
 - An OpenAI API key with access to `gpt-4o-transcribe`
+  (recommended over the mini variant because it stays more accurate on short,
+  noisy CLI commands)
 
 ## Setup
 1. Clone the repository:  
@@ -66,6 +74,31 @@ When you're done, stop the script with `Ctrl+C` and leave the virtual environmen
 ```bash
 deactivate
 ```
+
+## GUI Dashboard (branch `feature/gui-dashboard`)
+This branch ships an optional Tkinter dashboard so you can paste your OpenAI API key,
+start/stop the daemon, and watch logs without opening a terminal.
+
+1. Check out `feature/gui-dashboard`, then run:
+   ```bash
+   ./scripts/install-dashboard.sh
+   ```
+   The script links `scripts/dashboard.py` into `~/.local/bin` as
+   `speech-to-cli-dashboard`, registers a desktop entry in
+   `~/.local/share/applications`, installs a microphone-style icon under
+   `~/.local/share/icons`, and pulls in `python3-tk` on Debian/Ubuntu if needed so
+   the GUI can launch.
+2. Open your desktop app launcher, search for “Speech-to-CLI Dashboard”, and start it
+   (or run `speech-to-cli-dashboard` from a terminal).
+3. The launcher now shows a microphone icon named “Speech-to-CLI Dashboard” in your
+   app grid. Pin it for one-click access—on GNOME Shell, right-click the running
+   icon in the Dash/Dock and choose **Add to Favorites** (other desktops offer
+   similar “Pin” or “Add to panel” options).
+4. In the dashboard window, paste your `OPENAI_API_KEY`, hit **Save key**, then use
+   **Start**/**Stop** as needed. The key is stored in `.env` and reloaded next time,
+   and closing the window stops the background daemon automatically.
+   *Already installed the dashboard before? Re-run `./scripts/install-dashboard.sh`
+   to refresh the desktop entry and icon.*
 
 ## Configuration
 Adjust `config.py` to change:
