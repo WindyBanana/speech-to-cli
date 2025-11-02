@@ -18,6 +18,7 @@ from evdev import InputDevice, ecodes
 from openai import OpenAI
 
 import config
+from features import Features
 
 
 def configure_logging() -> None:
@@ -135,7 +136,7 @@ class PushToTalkDaemon:
                 )
                 continue
             caps = device.capabilities().get(ecodes.EV_KEY, [])
-            key_codes: Iterable[int]
+            key_codes: Iterable[int}
             if isinstance(caps, dict):
                 key_codes = (code for codes in caps.values() for code in codes)
             else:
@@ -293,6 +294,10 @@ def ensure_api_key() -> str:
 def main() -> int:
     configure_logging()
     load_dotenv()
+    if config.FEATURE_FLAGS.get(Features.DASHBOARD):
+        from scripts import dashboard
+        dashboard.main()
+        return 0
     try:
         api_key = ensure_api_key()
     except RuntimeError as exc:
