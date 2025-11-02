@@ -80,45 +80,4 @@ When you're done, stop the script with `Ctrl+C` and leave the virtual environmen
 deactivate
 ```
 
-## GUI Dashboard (branch `feature/gui-dashboard`)
-This branch ships an optional Tkinter dashboard so you can paste your OpenAI API key,
-start/stop the daemon, and watch logs without opening a terminal.
 
-1. Check out `feature/gui-dashboard`, then run:
-   ```bash
-   ./scripts/install-dashboard.sh
-   ```
-   The script links `scripts/dashboard.py` into `~/.local/bin` as
-   `speech-to-cli-dashboard`, registers a desktop entry in
-   `~/.local/share/applications`, installs a microphone-style icon under
-   `~/.local/share/icons`, and pulls in `python3-tk` on Debian/Ubuntu if needed so
-   the GUI can launch.
-2. Open your desktop app launcher, search for “Speech-to-CLI Dashboard”, and start it
-   (or run `speech-to-cli-dashboard` from a terminal).
-3. The launcher now shows a microphone icon named “Speech-to-CLI Dashboard” in your
-   app grid. Pin it for one-click access—on GNOME Shell, right-click the running
-   icon in the Dash/Dock and choose **Add to Favorites** (other desktops offer
-   similar “Pin” or “Add to panel” options).
-4. In the dashboard window, paste your `OPENAI_API_KEY`, hit **Save key**, then use
-   **Start**/**Stop** as needed. The key is stored in `.env` and reloaded next time,
-   and closing the window stops the background daemon automatically.
-   *Already installed the dashboard before? Re-run `./scripts/install-dashboard.sh`
-   to refresh the desktop entry and icon.*
-
-## Configuration
-Adjust `config.py` to change:
-- `PTT_KEY`: key name from `evdev.ecodes` (default `KEY_RIGHTALT`)
-- `PTT_KEYSYM`: X11 keysym sent to `xdotool keyup` before typing (set to `None` if your push-to-talk key is not a modifier)
-- `PRESS_ENTER`: whether to send the Enter key after typing the transcription
-- `MODEL`: OpenAI transcription model (`gpt-4o-transcribe`)
-- `AUDIO_SAMPLE_RATE`, `AUDIO_CHANNELS`, `MAX_RECORD_SECONDS`: audio capture parameters
-
-Environment variables are loaded from `.env` using `python-dotenv`. At minimum, set `OPENAI_API_KEY`.
-
-### Optional Logging Tweaks
-`config.py` exposes a few switches:
-- `LOG_LEVEL`: set to `logging.WARNING` (or `"WARNING"`) to quiet most console output.
-- `LOG_FORMAT`: defaults to `%(message)s` to avoid timestamps; change as desired.
-- `LOG_TRANSCRIPTS`: set `True` if you want the recognized text logged to the console as well as typed via `xdotool`.
-
-To keep the daemon running while you use other apps, start it in one terminal (or background it with `nohup python main.py &`) and switch focus to the target window before releasing the push-to-talk key.
