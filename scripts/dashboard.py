@@ -137,7 +137,7 @@ class DashboardApp:
             self._reset_buttons()
             return
 
-        self.daemon.stop_listening()
+        self.daemon.stop()
         self.daemon_thread.join(timeout=1)
         self.daemon = None
         self.daemon_thread = None
