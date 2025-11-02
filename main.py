@@ -137,7 +137,7 @@ class PushToTalkDaemon:
                 )
                 continue
             caps = device.capabilities().get(ecodes.EV_KEY, [])
-            key_codes: Iterable[int}
+            key_codes: Iterable[int]
             if isinstance(caps, dict):
                 key_codes = (code for codes in caps.values() for code in codes)
             else:
