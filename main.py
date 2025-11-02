@@ -299,6 +299,9 @@ class PushToTalkDaemon:
             except Exception:
                 pass
 
+    def stop(self) -> None:
+        self._running = False
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Speech-to-CLI daemon.")

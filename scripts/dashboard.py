@@ -132,12 +132,16 @@ class DashboardApp:
         self.stop_button.configure(state="normal")
 
     def stop(self) -> None:
+        print("Stopping daemon...")
         if not self.daemon or not self.daemon_thread or not self.daemon_thread.is_alive():
+            print("Daemon not running.")
             self.status_var.set("Status: already stopped")
             self._reset_buttons()
             return
 
+        print("Calling daemon.stop()...")
         self.daemon.stop()
+        print("Joining daemon thread...")
         self.daemon_thread.join(timeout=1)
         self.daemon = None
         self.daemon_thread = None
@@ -145,6 +149,7 @@ class DashboardApp:
         self._restore_stdout()
         self.status_var.set("Status: stopped")
         self._reset_buttons()
+        print("Daemon stopped.")
 
     def on_close(self) -> None:
         self.stop()
