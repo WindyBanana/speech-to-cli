@@ -287,16 +287,16 @@ class PushToTalkDaemon:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Speech-to-CLI daemon.")
     parser.add_argument(
-        "--no-dashboard",
+        "--dashboard",
         action="store_true",
-        help="Disable the GUI dashboard and run in headless mode.",
+        help="Enable the GUI dashboard.",
     )
     args = parser.parse_args()
 
     configure_logging()
     load_dotenv()
 
-    if not args.no_dashboard and config.FEATURE_FLAGS.get(Features.DASHBOARD):
+    if args.dashboard and config.FEATURE_FLAGS.get(Features.DASHBOARD):
         from scripts import dashboard
         dashboard.main()
         return 0
