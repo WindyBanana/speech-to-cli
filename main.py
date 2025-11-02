@@ -114,6 +114,7 @@ class PushToTalkDaemon:
         self._ptt_key_code = self._resolve_keycode(ptt_key_name)
         self._devices = self._discover_devices()
         self._fd_to_device: Dict[int, InputDevice] = {dev.fd: dev for dev in self._devices}
+        self._running = False
         if not self._devices:
             self._logger.error("No input devices found. Ensure you have permission to read /dev/input/event*.")  # noqa: E501
         else:
@@ -149,11 +150,25 @@ class PushToTalkDaemon:
                 devices.append(device)
         return devices
 
-    def run(self) -> None:
-        if not self._fd_to_device:
+    def start_recording(self) -> None:
+        if self._recorder.recording:
             return
         try:
-            while True:
+            self._recorder.start()
+        except Exception as exc:
+            self._logger.error("Failed to start recording: %s", exc, exc_info=True)
+
+    def stop_recording(self) -> None:
+        if not self._recorder.recording:
+            return
+        self._finalize_recording()
+
+    def start_listening(self, on_key_down, on_key_up) -> None:
+        if not self._fd_to_device:
+            return
+        self._running = True
+        try:
+            while self._running:
                 self._check_recording_duration()
                 ready, _, _ = select.select(self._fd_to_device.keys(), [], [], 0.1)
                 for fd in ready:
@@ -162,7 +177,11 @@ class PushToTalkDaemon:
                         continue
                     try:
                         for event in device.read():
-                            self._handle_event(event)
+                            if event.type == ecodes.EV_KEY and event.code == self._ptt_key_code:
+                                if event.value == 1:  # key down
+                                    on_key_down()
+                                elif event.value == 0:  # key up
+                                    on_key_up()
                     except BlockingIOError:
                         continue
                     except OSError as exc:
@@ -172,28 +191,8 @@ class PushToTalkDaemon:
         finally:
             self._cleanup()
 
-    def _handle_event(self, event) -> None:
-        if event.type != ecodes.EV_KEY:
-            return
-        if event.code != self._ptt_key_code:
-            return
-        if event.value == 1:  # key down
-            self._on_key_down()
-        elif event.value == 0:  # key up
-            self._on_key_up()
-
-    def _on_key_down(self) -> None:
-        if self._recorder.recording:
-            return
-        try:
-            self._recorder.start()
-        except Exception as exc:
-            self._logger.error("Failed to start recording: %s", exc, exc_info=True)
-
-    def _on_key_up(self) -> None:
-        if not self._recorder.recording:
-            return
-        self._finalize_recording()
+    def stop_listening(self) -> None:
+        self._running = False
 
     def _check_recording_duration(self) -> None:
         if self._recorder.recording and self._recorder.has_reached_max_duration():
@@ -285,13 +284,6 @@ class PushToTalkDaemon:
                 pass
 
 
-def ensure_api_key() -> str:
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is not set. Check your .env file.")
-    return api_key
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="Speech-to-CLI daemon.")
     parser.add_argument(
@@ -309,10 +301,9 @@ def main() -> int:
         dashboard.main()
         return 0
 
-    try:
-        api_key = ensure_api_key()
-    except RuntimeError as exc:
-        logging.getLogger("main").error(str(exc))
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        logging.getLogger("main").error("OPENAI_API_KEY is not set. Check your .env file.")
         return 1
 
     client = OpenAI(api_key=api_key)
@@ -325,7 +316,14 @@ def main() -> int:
         channels=config.AUDIO_CHANNELS,
         max_seconds=config.MAX_RECORD_SECONDS,
     )
-    daemon.run()
+
+    def on_key_down():
+        daemon.start_recording()
+
+    def on_key_up():
+        daemon.stop_recording()
+
+    daemon.start_listening(on_key_down, on_key_up)
     return 0
 
 
