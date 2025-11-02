@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import logging
 import os
 import select
@@ -292,12 +293,22 @@ def ensure_api_key() -> str:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Speech-to-CLI daemon.")
+    parser.add_argument(
+        "--no-dashboard",
+        action="store_true",
+        help="Disable the GUI dashboard and run in headless mode.",
+    )
+    args = parser.parse_args()
+
     configure_logging()
     load_dotenv()
-    if config.FEATURE_FLAGS.get(Features.DASHBOARD):
+
+    if not args.no_dashboard and config.FEATURE_FLAGS.get(Features.DASHBOARD):
         from scripts import dashboard
         dashboard.main()
         return 0
+
     try:
         api_key = ensure_api_key()
     except RuntimeError as exc:

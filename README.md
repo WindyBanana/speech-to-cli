@@ -63,9 +63,12 @@ sudo apt install libportaudio2 portaudio19-dev
 ```
 
 ## Running
+
+By default, the application will run with the GUI dashboard. To run in headless mode, use the `--no-dashboard` flag:
+
 ```bash
 source .venv/bin/activate
-python main.py
+python main.py --no-dashboard
 ```
 
 Hold the configured push-to-talk key (`config.PTT_KEY`) to start recording. Release the key (or wait 10 seconds) to submit the audio, transcribe it, and type the text. To automatically send Enter afterwards, leave `PRESS_ENTER = True` in `config.py`.
