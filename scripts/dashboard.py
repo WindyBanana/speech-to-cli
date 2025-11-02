@@ -7,20 +7,15 @@ OPENAI_API_KEY stored in the project's .env file.
 
 from __future__ import annotations
 
-import queue
+import signal
+import subprocess
 import sys
-import threading
 import tkinter as tk
-from pathlib import Path
 from tkinter import scrolledtext
+import threading
+import queue
+from pathlib import Path
 from typing import Optional
-
-import evdev
-
-from openai import OpenAI
-
-import config
-from main import PushToTalkDaemon
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -32,8 +27,8 @@ ENV_PATH = PROJECT_ROOT / ".env"
 class DashboardApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.daemon: Optional[PushToTalkDaemon] = None
-        self.daemon_thread: Optional[threading.Thread] = None
+        self.proc: Optional[subprocess.Popen[str]] = None
+        self.log_thread: Optional[threading.Thread] = None
         self.log_queue: queue.Queue[str] = queue.Queue()
         self.status_var = tk.StringVar(value="Status: stopped")
         self.api_key_var = tk.StringVar(value=self._load_api_key())
@@ -85,57 +80,86 @@ class DashboardApp:
         buttons_frame = tk.Frame(root)
         buttons_frame.pack(fill="x", padx=12, pady=(0, 12))
 
-        self.start_button = tk.Button(buttons_frame, text="Start Recording", command=self.start_recording)
+        self.start_button = tk.Button(buttons_frame, text="Start", command=self.start)
         self.start_button.pack(fill="x")
 
-        self.stop_button = tk.Button(buttons_frame, text="Stop Recording", command=self.stop_recording)
+        self.stop_button = tk.Button(buttons_frame, text="Stop", command=self.stop)
         self.stop_button.pack(fill="x", pady=(6, 0))
         self.stop_button.configure(state="disabled")
 
         self.root.after(100, self._drain_log_queue)
 
-    def start_recording(self) -> None:
-        if not self.daemon:
-            key = self.api_key_var.get().strip()
-            if not key:
-                self.status_var.set("Status: add an API key before starting")
-                return
-            try:
-                self._write_api_key(key)
-            except OSError as exc:
-                self.status_var.set(f"Status: could not save key ({exc})")
-                return
+    def start(self) -> None:
+        if self.proc and self.proc.poll() is None:
+            self.status_var.set("Status: already running")
+            return
 
-            self._clear_log()
-            self._redirect_stdout()
+        key = self.api_key_var.get().strip()
+        if not key:
+            self.status_var.set("Status: add an API key before starting")
+            return
 
-            client = OpenAI(api_key=key)
-            self.daemon = PushToTalkDaemon(
-                client=client,
-                ptt_key_name=config.PTT_KEY,
-                press_enter=config.PRESS_ENTER,
-                model=config.MODEL,
-                sample_rate=config.AUDIO_SAMPLE_RATE,
-                channels=config.AUDIO_CHANNELS,
-                max_seconds=config.MAX_RECORD_SECONDS,
+        try:
+            self._write_api_key(key)
+        except OSError as exc:
+            self.status_var.set(f"Status: could not save key ({exc})")
+            return
+
+        python_cmd = (
+            [str(VENV_PYTHON), str(SCRIPT_ENTRYPOINT)]
+            if VENV_PYTHON.exists()
+            else [sys.executable, str(SCRIPT_ENTRYPOINT)]
+        )
+
+        self._clear_log()
+        self._append_log("Launching speech-to-cli...\n")
+        try:
+            self.proc = subprocess.Popen(
+                python_cmd,
+                cwd=str(PROJECT_ROOT),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
             )
+        except FileNotFoundError:
+            self.status_var.set("Status: cannot locate Python executable")
+            return
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            self.status_var.set(f"Status: failed to start ({exc})")
+            return
 
-        self.daemon.start_recording()
-        self.status_var.set("Status: recording")
+        if self.proc.stdout:
+            self.log_thread = threading.Thread(
+                target=self._stream_output, args=(self.proc.stdout,), daemon=True
+            )
+            self.log_thread.start()
+
+        self.status_var.set("Status: running")
         self.start_button.configure(state="disabled")
         self.stop_button.configure(state="normal")
+        self.root.after(500, self._poll_process)
 
-    def stop_recording(self) -> None:
-        if self.daemon:
-            self.daemon.stop_recording()
+    def stop(self) -> None:
+        if not self.proc or self.proc.poll() is not None:
+            self.status_var.set("Status: already stopped")
+            self._reset_buttons()
+            return
+
+        self.proc.terminate()
+        try:
+            self.proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            self.proc.send_signal(signal.SIGKILL)
+            self.proc.wait(timeout=5)
+
+        self._join_log_thread()
+        self.proc = None
         self.status_var.set("Status: stopped")
         self._reset_buttons()
 
     def on_close(self) -> None:
-        if self.daemon:
-            self.daemon.stop_listening()
-            if self.daemon_thread:
-                self.daemon_thread.join(timeout=1)
+        self.stop()
         self.root.destroy()
 
     def save_api_key(self) -> None:
@@ -153,17 +177,10 @@ class DashboardApp:
     def toggle_api_visibility(self) -> None:
         self.api_entry.configure(show="" if self.show_api_var.get() else "*")
 
-    def _redirect_stdout(self) -> None:
-        sys.stdout = self
-
-    def _restore_stdout(self) -> None:
-        sys.stdout = sys.__stdout__
-
-    def write(self, text: str) -> None:
-        self.log_queue.put(text)
-
-    def flush(self) -> None:
-        pass
+    def _stream_output(self, pipe) -> None:
+        for line in iter(pipe.readline, ""):
+            self.log_queue.put(line)
+        pipe.close()
 
     def _drain_log_queue(self) -> None:
         updated = False
@@ -189,6 +206,24 @@ class DashboardApp:
         self.log_text.insert("end", text)
         self.log_text.configure(state="disabled")
 
+    def _join_log_thread(self) -> None:
+        if self.log_thread and self.log_thread.is_alive():
+            self.log_thread.join(timeout=1)
+        self.log_thread = None
+
+    def _poll_process(self) -> None:
+        if not self.proc:
+            return
+        if self.proc.poll() is None:
+            self.root.after(500, self._poll_process)
+            return
+
+        self._join_log_thread()
+        self.proc = None
+        self.status_var.set("Status: stopped")
+        self._reset_buttons()
+        self._append_log("Process exited.\n")
+
     def _reset_buttons(self) -> None:
         self.start_button.configure(state="normal")
         self.stop_button.configure(state="disabled")
@@ -207,7 +242,7 @@ class DashboardApp:
                     continue
                 if line.startswith("OPENAI_API_KEY="):
                     value = line.split("=", 1)[1].strip()
-                    if value.startswith(''') and value.endswith('''):
+                    if value.startswith('"') and value.endswith('"'):
                         value = value[1:-1]
                     return value
         except OSError:
