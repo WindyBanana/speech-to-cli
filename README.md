@@ -63,10 +63,15 @@ sudo apt install libportaudio2 portaudio19-dev
 ```
 
 ## Running
+
+By default, the application will run in headless mode. To run with the GUI dashboard, use the `--dashboard` flag:
+
 ```bash
 source .venv/bin/activate
-python main.py
+python main.py --dashboard
 ```
+
+The dashboard provides an easier way to manage your OpenAI API key.
 
 Hold the configured push-to-talk key (`config.PTT_KEY`) to start recording. Release the key (or wait 10 seconds) to submit the audio, transcribe it, and type the text. To automatically send Enter afterwards, leave `PRESS_ENTER = True` in `config.py`.
 

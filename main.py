@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import logging
 import os
 import select
@@ -18,6 +19,7 @@ from evdev import InputDevice, ecodes
 from openai import OpenAI
 
 import config
+from features import Features
 
 
 def configure_logging() -> None:
@@ -112,6 +114,7 @@ class PushToTalkDaemon:
         self._ptt_key_code = self._resolve_keycode(ptt_key_name)
         self._devices = self._discover_devices()
         self._fd_to_device: Dict[int, InputDevice] = {dev.fd: dev for dev in self._devices}
+        self._running = False
         if not self._devices:
             self._logger.error("No input devices found. Ensure you have permission to read /dev/input/event*.")  # noqa: E501
         else:
@@ -147,11 +150,25 @@ class PushToTalkDaemon:
                 devices.append(device)
         return devices
 
+    def start_recording(self) -> None:
+        if self._recorder.recording:
+            return
+        try:
+            self._recorder.start()
+        except Exception as exc:
+            self._logger.error("Failed to start recording: %s", exc, exc_info=True)
+
+    def stop_recording(self) -> None:
+        if not self._recorder.recording:
+            return
+        self._finalize_recording()
+
     def run(self) -> None:
         if not self._fd_to_device:
             return
+        self._running = True
         try:
-            while True:
+            while self._running:
                 self._check_recording_duration()
                 ready, _, _ = select.select(self._fd_to_device.keys(), [], [], 0.1)
                 for fd in ready:
@@ -283,20 +300,26 @@ class PushToTalkDaemon:
                 pass
 
 
-def ensure_api_key() -> str:
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is not set. Check your .env file.")
-    return api_key
-
-
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Speech-to-CLI daemon.")
+    parser.add_argument(
+        "--dashboard",
+        action="store_true",
+        help="Enable the GUI dashboard.",
+    )
+    args = parser.parse_args()
+
     configure_logging()
     load_dotenv()
-    try:
-        api_key = ensure_api_key()
-    except RuntimeError as exc:
-        logging.getLogger("main").error(str(exc))
+
+    if args.dashboard:
+        from scripts import dashboard
+        dashboard.main()
+        return 0
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        logging.getLogger("main").error("OPENAI_API_KEY is not set. Check your .env file.")
         return 1
 
     client = OpenAI(api_key=api_key)
@@ -309,6 +332,7 @@ def main() -> int:
         channels=config.AUDIO_CHANNELS,
         max_seconds=config.MAX_RECORD_SECONDS,
     )
+
     daemon.run()
     return 0
 

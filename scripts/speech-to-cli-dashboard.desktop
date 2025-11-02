@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Speech-to-CLI Dashboard
+Comment=Start or stop the speech-to-cli daemon
+Exec=speech-to-cli-dashboard
+Icon=speech-to-cli-dashboard
+Terminal=false
+Categories=Utility;
