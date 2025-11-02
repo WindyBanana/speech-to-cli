@@ -296,7 +296,7 @@ def main() -> int:
     configure_logging()
     load_dotenv()
 
-    if args.dashboard and config.FEATURE_FLAGS.get(Features.DASHBOARD):
+    if args.dashboard:
         from scripts import dashboard
         dashboard.main()
         return 0
