@@ -1,0 +1,16 @@
+[Unit]
+Description=Speech-to-CLI Push-to-Talk Daemon
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/speech-to-cli
+Restart=on-failure
+RestartSec=5
+Environment=DISPLAY=:0
+
+# Load environment from user's .env file if it exists
+EnvironmentFile=-%h/.config/speech-to-cli/.env
+
+[Install]
+WantedBy=default.target

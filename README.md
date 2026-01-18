@@ -1,83 +1,156 @@
-# Speech-to-CLI Push-to-Talk Daemon
+# Speech-to-CLI
 
-Push-to-talk voice transcription helper for Linux desktops. Hold a configured key (Right Alt by default) to record audio, send it to OpenAI Whisper (`gpt-4o-transcribe`), and type the transcription into the active window via `xdotool`.
+Cross-platform push-to-talk speech recognition that types into any application. Hold a key to record, release to transcribe via OpenAI Whisper and type the result into the focused window.
 
-## Branches
-- `master`: headless daemon only; works on any Linux environment (desktop or server).
-- `feature/gui-dashboard`: includes the optional GUI dashboard described below. The
-  dashboard depends on Tk (`python3-tk`); the `scripts/install-dashboard.sh` helper
-  will install it automatically on Debian/Ubuntu-based systems.
+## Supported Platforms
+
+| Platform | Input Method | Typing Method | Status |
+|----------|-------------|---------------|--------|
+| Linux    | evdev       | xdotool       | Stable |
+| macOS    | pynput      | pynput        | Beta   |
+| Windows  | pynput      | pynput        | Beta   |
 
 ## Requirements
-- Python 3.10 or newer
-- Python venv tooling (`sudo apt install python3.12-venv` on Debian/Ubuntu; older releases may use `python3-venv`)
-- `xdotool` installed on the system (`sudo apt install xdotool`)
-- PortAudio runtime/dev packages (`sudo apt install libportaudio2 portaudio19-dev`)
-- Permission to read `/dev/input/event*` (add your user to the `input` group or run with elevated privileges)
-- Add the user to the input group (`sudo usermod -aG input $USER`)
-- An OpenAI API key with access to `gpt-4o-transcribe`
-  (recommended over the mini variant because it stays more accurate on short,
-  noisy CLI commands)
 
-## Setup
-1. Clone the repository:  
-   ```bash
-   git clone https://github.com/WindyBanana/speech-to-cli.git
-   cd speech-to-cli
-   ```
-2. Copy the environment template and add your OpenAI key:  
-   ```bash
-   cp .env.sample .env
-   nano .env  # or your preferred editor
-   ```
-   Replace `your_openai_api_key_here` with a valid `OPENAI_API_KEY`.
-3. Create the virtual environment and install dependencies:  
-   ```bash
-   ./scripts/setup.sh
-   ```
-   This script creates (or reuses) `.venv`, upgrades `pip`, and installs everything from `requirements.txt`.  
-   If you see `ensurepip is not available`, install the venv tooling and re-run:
-   ```bash
-   sudo apt install python3.12-venv   # or python3-venv on older distros
-   rm -rf .venv
-   ./scripts/setup.sh
-   ```
-4. Activate the environment whenever you work on the project:  
-   ```bash
-   source .venv/bin/activate
-   ```
+- Python 3.10+
+- OpenAI API key with access to `gpt-4o-transcribe`
+- Platform-specific requirements below
 
-## Keyboard Input Permissions
-You must be able to read keyboard events from `/dev/input/event*`. On most Debian/Ubuntu systems this means joining the `input` group:
+## Installation
+
+### macOS (Homebrew)
+
+```bash
+brew tap WindyBanana/tap
+brew install speech-to-cli
+```
+
+Or install manually:
+
+```bash
+pip install speech-to-cli[macos]
+```
+
+**Important:** Grant Accessibility permissions in System Preferences > Privacy & Security > Accessibility for your terminal app.
+
+### Linux
+
+```bash
+# Install system dependencies (Debian/Ubuntu)
+sudo apt install xdotool libportaudio2 portaudio19-dev
+
+# Add yourself to the input group
+sudo usermod -aG input $USER
+newgrp input  # or log out and back in
+
+# Install the package
+pip install speech-to-cli[linux]
+```
+
+### Windows
+
+Download the latest `.exe` from [Releases](https://github.com/WindyBanana/speech-to-cli/releases), or install via pip:
+
+```bash
+pip install speech-to-cli[windows]
+```
+
+## Configuration
+
+Set your OpenAI API key:
+
+```bash
+export OPENAI_API_KEY="your-api-key"
+```
+
+Or create a `.env` file:
+
+```
+OPENAI_API_KEY=your-api-key
+```
+
+## Usage
+
+```bash
+speech-to-cli                     # Run with defaults
+speech-to-cli --key f13           # Use F13 as PTT key
+speech-to-cli --no-enter          # Don't press Enter after typing
+speech-to-cli --verbose           # Enable debug logging
+```
+
+### Default PTT Keys
+
+| Platform | Default Key      |
+|----------|------------------|
+| Linux    | Right Shift      |
+| macOS    | Right Shift      |
+| Windows  | Right Shift      |
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OPENAI_API_KEY` | Your OpenAI API key | Required |
+| `SPEECH_PTT_KEY` | Push-to-talk key name | Platform default |
+| `SPEECH_PRESS_ENTER` | Press Enter after typing | true |
+| `SPEECH_MODEL` | Whisper model | gpt-4o-transcribe |
+| `SPEECH_LANGUAGE` | Language code | en |
+| `SPEECH_MAX_SECONDS` | Max recording duration | 60 |
+| `SPEECH_LOG_LEVEL` | Log level | INFO |
+| `SPEECH_LOG_TRANSCRIPTS` | Log transcription text | false |
+
+## Development
+
+```bash
+# Clone and install in development mode
+git clone https://github.com/WindyBanana/speech-to-cli.git
+cd speech-to-cli
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+
+# Install with development dependencies
+pip install -e ".[dev,linux]"  # or [dev,macos] or [dev,windows]
+
+# Run tests
+pytest
+
+# Run linting
+ruff check src/
+mypy src/
+```
+
+### Building Windows Executable
+
+```bash
+pip install pyinstaller
+python packaging/windows/build.py
+```
+
+The executable will be in `dist/speech-to-cli.exe`.
+
+## Troubleshooting
+
+### macOS: "Input not being detected"
+Grant Accessibility permissions to your terminal in System Preferences > Privacy & Security > Accessibility.
+
+### Linux: "No input devices found"
+Add your user to the `input` group:
 ```bash
 sudo usermod -aG input $USER
-newgrp input      # start a shell with the new group, or log out/in
+newgrp input
 ```
-If you skip the `usermod` command, the daemon will fail with `PermissionError` when trying to read `/dev/input/event*`.
-Verify membership with `id` or `groups`; you should see `input` listed.
 
-If `python main.py` fails with “PortAudio library not found”, install the PortAudio runtime/dev packages and rerun setup:
+### Linux: "xdotool not found"
+Install xdotool:
 ```bash
-sudo apt install libportaudio2 portaudio19-dev
-./scripts/setup.sh
+sudo apt install xdotool
 ```
 
-## Running
+### All platforms: "API key not set"
+Set `OPENAI_API_KEY` in your environment or `.env` file.
 
-By default, the application will run in headless mode. To run with the GUI dashboard, use the `--dashboard` flag:
+## License
 
-```bash
-source .venv/bin/activate
-python main.py --dashboard
-```
-
-The dashboard provides an easier way to manage your OpenAI API key.
-
-Hold the configured push-to-talk key (`config.PTT_KEY`) to start recording. Release the key (or wait 10 seconds) to submit the audio, transcribe it, and type the text. To automatically send Enter afterwards, leave `PRESS_ENTER = True` in `config.py`.
-
-When you're done, stop the script with `Ctrl+C` and leave the virtual environment with:
-```bash
-deactivate
-```
-
-
+MIT

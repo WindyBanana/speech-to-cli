@@ -1,0 +1,85 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "speech-to-cli"
+version = "0.2.0"
+description = "Cross-platform push-to-talk speech recognition that types into any application"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "WindyBanana" },
+]
+keywords = ["speech", "recognition", "voice", "transcription", "cli", "whisper", "openai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+
+dependencies = [
+    "numpy>=1.24.0",
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "sounddevice>=0.4.6",
+]
+
+[project.optional-dependencies]
+# Linux-specific dependencies
+linux = [
+    "evdev>=1.6.0",
+]
+# macOS and Windows use pynput
+macos = [
+    "pynput>=1.7.6",
+]
+windows = [
+    "pynput>=1.7.6",
+]
+# Development dependencies
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+speech-to-cli = "speech_to_cli.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/WindyBanana/speech-to-cli"
+Repository = "https://github.com/WindyBanana/speech-to-cli"
+Issues = "https://github.com/WindyBanana/speech-to-cli/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/speech_to_cli"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=speech_to_cli"
