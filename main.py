@@ -16,7 +16,7 @@ import numpy as np
 import sounddevice as sd
 from dotenv import load_dotenv
 from evdev import InputDevice, ecodes
-from openai import OpenAI
+from openai import APIConnectionError, OpenAI
 
 import config
 from features import Features
@@ -259,6 +259,12 @@ class PushToTalkDaemon:
                     file=audio_file,
                     language="en",
                 )
+        except APIConnectionError as exc:
+            self._logger.error(
+                "Transcription failed: could not reach OpenAI (%s). Check your network/DNS or VPN/firewall settings.",
+                exc,
+            )
+            return ""
         except Exception as exc:
             self._logger.error("Transcription request failed: %s", exc, exc_info=True)
             return ""
